@@ -10,7 +10,6 @@ LAZY_MODE = False
 TENSOR_COUNTER = 0
 
 
-
 class Op:
     "Operator definition"
 
@@ -26,7 +25,6 @@ class Op:
     def gradient(self, out_grad: 'Value', node: 'Value'):
         ...
 
-
     def gradient_as_tuple(self, outgrad: 'Value', node: 'Value'):
         output = self.gradient(outgrad, node)
         if isinstance(output, tuple):
@@ -37,12 +35,11 @@ class Op:
             return (output,)
 
 
-
 class TensorOp(Op):
     """A subclass of Op that creates a Tensor based on the operation (building graph)."""
 
     def __call__(self, *args):
-        return Tensor.make_from_op(self,args)
+        return Tensor.make_from_op(self, args)
 
 
 class TensorTupleOp(Op):
@@ -52,16 +49,12 @@ class TensorTupleOp(Op):
         return TensorTuple.make_from_op(self, args)
 
 
-
-
-
 class Value:
     """A value in the computational graph"""
     op: Optional[Op]
     inputs: List["Value"]
     cached_data: NDArray
     requires_grad: bool
-
 
     def realize_cached_data(self):
         if self.cached_data is not None:
@@ -76,7 +69,7 @@ class Value:
 
     def __del__(self):
         global TENSOR_COUNTER
-        TENSOR_COUNTER -=1
+        TENSOR_COUNTER -= 1
 
     def _init(
         self,
@@ -97,7 +90,6 @@ class Value:
         self.cached_data = cached_data
         self.requires_grad = requires_grad
 
-
     @classmethod
     def make_const(cls, data, *, requires_grad=False):
         value = cls.__new__(cls)
@@ -109,9 +101,8 @@ class Value:
         )
         return value
 
-
     @classmethod
-    def make_from_op(cls, op:Op, inputs:List['Value']):
+    def make_from_op(cls, op: Op, inputs: List['Value']):
         value = cls.__new__(cls)
         value._init(op=op, inputs=inputs)
         if LAZY_MODE is False:
@@ -119,6 +110,7 @@ class Value:
                 return value.detach()
             value.realize_cached_data()
         return value
+
 
 class TensorTuple(Value):
     """Represents a tuple of tensors in the computational graph."""
@@ -148,9 +140,9 @@ class TensorTuple(Value):
         """Create a new tensor that shares the data but detaches from the graph."""
         return TensorTuple.make_const(self.realize_cached_data())
 
+
 class Tensor(Value):
     grad: 'Tensor'
-
 
     def __init__(
         self,
@@ -200,7 +192,6 @@ class Tensor(Value):
             tensor.realize_cached_data()
         return tensor
 
-
     @staticmethod
     def make_const(data, requires_grad=False):
         tensor = Tensor.__new__(Tensor)
@@ -214,21 +205,18 @@ class Tensor(Value):
         )
         return tensor
 
-
     @property
     def data(self):
         return self.detach()
 
-
     @data.setter
-    def data(self,value):
+    def data(self, value):
         assert isinstance(value, Tensor)
         assert value.dtype == self.dtype, "%s %s" % (
                     value.dtype,
                     self.dtype,
                 )
         self.cached_data = value.realize_cached_data()
-
 
     def detach(self):
         return Tensor.make_const(data=self.realize_cached_data())
@@ -248,7 +236,6 @@ class Tensor(Value):
             return default_device()
         return data.device
 
-
     def backward(self, out_grad=None):
         out_grad = (
             out_grad
@@ -258,7 +245,7 @@ class Tensor(Value):
         compute_gradient_of_variables(self, out_grad)
 
     def __repr__(self):
-            return "needle.Tensor(" + str(self.realize_cached_data()) + ")"
+        return "needle.Tensor(" + str(self.realize_cached_data()) + ")"
 
     def __str__(self):
         return self.realize_cached_data().__str__()
@@ -275,9 +262,6 @@ class Tensor(Value):
         if array_api is numpy:
             return data
         return data.numpy() if not isinstance(data, tuple) else [x.numpy() for x in data]
-
-
-    # --- now overwite the builtin callables for operations
 
     def __add__(self, other):
         if isinstance(other, Tensor):
@@ -330,15 +314,12 @@ class Tensor(Value):
     def transpose(self, axes=None):
         return needle.ops.Transpose(axes)(self)
 
-
-
     def __rsub__(self, other):
         return (-self) + other
 
     __radd__ = __add__
     __rmul__ = __mul__
     __rmatmul__ = __matmul__
-
 
 
 def compute_gradient_of_variables(output_tensor, out_grad):
@@ -374,6 +355,8 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     for node in node_list:
         topo_sort_dfs(node, visited, topo_order)
     return topo_order
+
+
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     if node in visited:
@@ -383,6 +366,8 @@ def topo_sort_dfs(node, visited, topo_order):
         topo_sort_dfs(inp, visited, topo_order)
     topo_order.append(node)
     return
+
+
 def sum_node_list(node_list):
     """Custom sum function in order to avoid create redundant nodes in Python sum implementation."""
     from operator import add

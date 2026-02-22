@@ -92,6 +92,7 @@ class RNNCell(Module):
             self.bias_hh, self.bias_ih = None, None
 
         self.activation = ACTIVATIONS[nonlinearity]
+
     def forward(self, X, h=None):
         """
         Inputs:
@@ -103,8 +104,6 @@ class RNNCell(Module):
         h' of shape (bs, hidden_size): Tensor contianing the next hidden state
             for each element in the batch.
         """
-        # if hidden state is not provided then ignore it.
-        # bs => batch, why it is not sequence length x input size ? refer to the ipad notes
         X = X @ self.W_ih
         if self.bias_ih:
             X += ops.broadcast_to(self.bias_ih, X.shape)
@@ -115,6 +114,8 @@ class RNNCell(Module):
 
         X = self.activation(X)
         return X
+
+
 class RNN(Module):
     def __init__(
         self,
@@ -177,12 +178,10 @@ class RNN(Module):
                     prev_hidden_idx = (timestep - 1) * self.num_layers + idx
                     h_i = cell(
                         x_i, outputs[prev_hidden_idx]
-                    )  # access previous hidden_state
+                    )
                 x_i = h_i
                 outputs.append(h_i)
 
-        # Extract outputs: seq_output = last layer's hidden state at each timestep
-        # layer_output = all layers' hidden states at the last timestep
         seq_output = [outputs[t * self.num_layers + self.num_layers - 1] for t in range(seq_len)]
         layer_output = [outputs[(seq_len - 1) * self.num_layers + l] for l in range(self.num_layers)]
 
@@ -282,10 +281,6 @@ class LSTMCell(Module):
         c' of shape (bs, hidden_size): Tensor containing the next cell state for each
             element in the batch.
         """
-        # W_i_split = ops.split(self.W_ih, 1)
-        # W_h_split = ops.split(self.W_hh, 1)
-        # b_i_split = ops.split(self.bias_ih, 0)
-        # b_h_split = ops.split(self.bias_hh, 0)
         bs, input_size = X.shape
 
         if h is None:
@@ -314,6 +309,8 @@ class LSTMCell(Module):
         h = o * self.tanh(c)
 
         return h, c
+
+
 class LSTM(Module):
     def __init__(
         self,
@@ -370,15 +367,14 @@ class LSTM(Module):
                 dtype=self.dtype,
             ) for _ in range(self.num_layers)]
         else:
-            # Split initial hidden and cell states per layer
-            h_prev_list = ops.split(h[0], 0)  # h[0] of shape (num_layers, bs, hidden_size)
-            c_prev_list = ops.split(h[1], 0)  # h[1] of shape (num_layers, bs, hidden_size)
+            h_prev_list = ops.split(h[0], 0)
+            c_prev_list = ops.split(h[1], 0)
 
         outputs = []
-        X_ = ops.split(X, 0)  # Split input along the time dimension (seq_len)
+        X_ = ops.split(X, 0)
 
         for t in range(seq_len):
-            x_i = X_[t]  # Get the input for the current timestep
+            x_i = X_[t]
 
             h_i_list = []
             c_i_list = []
@@ -387,32 +383,24 @@ class LSTM(Module):
                 h_prev, c_prev = h_prev_list[layer], c_prev_list[layer]
                 cell = self.lstm_cells[layer]
 
-                # Perform the LSTM cell computation
                 h_i, c_i = cell(x_i, (h_prev, c_prev))
 
-                # Store the hidden and cell states
                 h_i_list.append(h_i)
                 c_i_list.append(c_i)
 
-                # For the next layer, the input will be the hidden state of the current layer
                 x_i = h_i
 
-            # Store the hidden state of the final layer for the current timestep
             outputs.append(h_i_list[-1])
 
-            # Update hidden and cell states for the next timestep
             h_prev_list = h_i_list
             c_prev_list = c_i_list
 
-        # Stack outputs across timesteps
-        outputs = ops.stack(outputs, 0)  # outputs of shape (seq_len, bs, hidden_size)
+        outputs = ops.stack(outputs, 0)
 
-        # Final hidden and cell states for all layers
-        h_n = ops.stack(h_prev_list, 0)  # shape (num_layers, bs, hidden_size)
-        c_n = ops.stack(c_prev_list, 0)  # shape (num_layers, bs, hidden_size)
+        h_n = ops.stack(h_prev_list, 0)
+        c_n = ops.stack(c_prev_list, 0)
 
         return outputs, (h_n, c_n)
-
 
 
 class Embedding(Module):
@@ -435,12 +423,13 @@ class Embedding(Module):
             init.randn(
                 num_embeddings,
                 embedding_dim,
-                mean = 0,
+                mean=0,
                 std=1,
                 device=device,
                 dtype=dtype
             )
         )
+
     def forward(self, x: Tensor) -> Tensor:
         """
         Maps word indices to one-hot vectors, and projects to embedding vectors

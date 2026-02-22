@@ -4,7 +4,6 @@ from ..autograd import Tensor
 from typing import Optional, List
 
 
-
 class Dataset:
     r"""An abstract class representing a `Dataset`.
 
@@ -21,10 +20,9 @@ class Dataset:
 
     def __len__(self) -> int:
         raise NotImplementedError
-    
+
     def apply_transforms(self, x):
         if self.transforms is not None:
-            # apply the transforms
             for tform in self.transforms:
                 x = tform(x)
         return x
@@ -40,7 +38,7 @@ class DataLoader:
             (default: ``1``).
         shuffle (bool, optional): set to ``True`` to have the data reshuffled
             at every epoch (default: ``False``).
-     """
+    """
     dataset: Dataset
     batch_size: Optional[int]
 
@@ -50,22 +48,25 @@ class DataLoader:
         batch_size: Optional[int] = 1,
         shuffle: bool = False,
     ):
-
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
         if not self.shuffle:
-            self.ordering = np.array_split(np.arange(len(dataset)), 
-                                           range(batch_size, len(dataset), batch_size))
+            self.ordering = np.array_split(
+                np.arange(len(dataset)),
+                range(batch_size, len(dataset), batch_size)
+            )
 
     def __iter__(self):
-            self.idx = 0
-            if self.shuffle:
-                tmp_range = np.arange(len(self.dataset))
-                np.random.shuffle(tmp_range)
-                self.ordering = np.array_split(tmp_range,
-                range(self.batch_size, len(self.dataset), self.batch_size))
-            return self
+        self.idx = 0
+        if self.shuffle:
+            tmp_range = np.arange(len(self.dataset))
+            np.random.shuffle(tmp_range)
+            self.ordering = np.array_split(
+                tmp_range,
+                range(self.batch_size, len(self.dataset), self.batch_size)
+            )
+        return self
 
     def __next__(self):
         if self.idx < len(self.ordering):
@@ -74,5 +75,6 @@ class DataLoader:
             return [Tensor(x) for x in data]
         else:
             raise StopIteration
+
     def __len__(self):
         return len(self.dataset)

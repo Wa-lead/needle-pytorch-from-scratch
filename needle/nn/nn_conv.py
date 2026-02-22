@@ -12,8 +12,10 @@ from .nn_basic import *
 def nchw_to_nhwc(x):
     return x.transpose().transpose((1, 3))
 
+
 def nhwc_to_nchw(x):
-    return x.transpose((1,3)).transpose()  
+    return x.transpose((1, 3)).transpose()
+
 
 class Conv(Module):
     """
@@ -70,16 +72,18 @@ class Conv(Module):
                     dtype=dtype,
                 )
             )
+
     def forward(self, x: Tensor) -> Tensor:
-        # shape NCHW => NCWH  
         x = nchw_to_nhwc(x)
         x = ops.conv(x, self.weight, stride=self.stride, padding=self.padding)
         if self.bias is not None:
             x += ops.broadcast_to(self.bias, x.shape)
         x = nhwc_to_nchw(x)
         return x
+
+
 class ConvBN(Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,bias=True, device=None, dtype='float32'):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, device=None, dtype='float32'):
         super().__init__()
         self.conv = Conv(
             in_channels=in_channels,
@@ -90,15 +94,14 @@ class ConvBN(Module):
             dtype=dtype
         )
         self.batch_norm = BatchNorm2d(
-            dim = out_channels,
+            dim=out_channels,
             device=device,
             dtype=dtype
         )
         self.relu = ReLU()
-        
+
     def forward(self, x):
         x = self.conv(x)
         x = self.batch_norm(x)
         x = self.relu(x)
         return x
-        

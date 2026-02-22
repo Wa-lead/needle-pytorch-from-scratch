@@ -6,6 +6,7 @@ from .ops_mathematic import *
 
 from needle.backend_selection import Device, array_api, NDArray, default_device
 
+
 class LogSoftmax(TensorOp):
     def compute(self, Z):
         max_Z = array_api.broadcast_to(Z.max(1, keepdims=True), Z.shape)
@@ -26,7 +27,6 @@ def logsoftmax(a):
     return LogSoftmax()(a)
 
 
-
 class LogSumExp(TensorOp):
     def __init__(self, axes: Optional[tuple] = None):
         self.axes = axes
@@ -44,7 +44,8 @@ class LogSumExp(TensorOp):
         input_shape = inp.shape
         mZ = Tensor(array_api.broadcast_to(self.mZ, input_shape), device=inp.device)
         base_shape = list(input_shape)
-        if isinstance(self.axes, int): self.axes = (self.axes,)
+        if isinstance(self.axes, int):
+            self.axes = (self.axes,)
         axes = list(range(len(base_shape))) \
             if self.axes is None else self.axes
         for ax in axes:

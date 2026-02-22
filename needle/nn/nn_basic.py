@@ -9,11 +9,13 @@ import numpy as np
 from abc import abstractmethod
 from typing import List
 
+
 def nchw_to_nhwc(x):
     return x.transpose().transpose((1, 3))
 
+
 def nhwc_to_nchw(x):
-    return x.transpose((1,3)).transpose()  
+    return x.transpose((1, 3)).transpose()
 
 
 class Parameter(Tensor):
@@ -103,7 +105,7 @@ class Linear(Module):
                 device=device,
                 dtype=dtype,
             )
-        )  # in_features x out_featuers
+        )
 
         self.bias = (
             Parameter(
@@ -115,10 +117,10 @@ class Linear(Module):
             )
             if bias
             else None
-        )  # out_features x 1
+        )
 
     def forward(self, x: Tensor):
-        out = x @ self.weight  # M x infeatures @ infeatures x outfeatures
+        out = x @ self.weight
         if self.bias:
             out += broadcast_to(self.bias, out.shape)
         return out
@@ -156,6 +158,8 @@ class SoftmaxLoss(Module):
         loss = divide_scalar(loss, -num)
         loss = summation(loss)
         return loss
+
+
 class BatchNorm1d(Module):
     def __init__(self, dim, eps=1e-5, momentum=0.1, device=None, dtype="float32"):
         super().__init__()
@@ -170,9 +174,7 @@ class BatchNorm1d(Module):
     def forward(self, x: Tensor) -> Tensor:
         shape = x.shape
         if self.training:
-            mean = (
-                summation(x, 0) / shape[0]
-            )  # do not broadcast here because we dont need batch
+            mean = summation(x, 0) / shape[0]
             x = x - broadcast_to(mean, x.shape)
             var = summation(power_scalar(x, 2), 0) / shape[0]
             x = x / broadcast_to(power_scalar(var + self.eps, 0.5), shape)
@@ -192,13 +194,13 @@ class BatchNorm1d(Module):
 class BatchNorm2d(BatchNorm1d):
     def __init__(self, dim, eps=0.00001, momentum=0.1, device=None, dtype="float32"):
         super().__init__(dim, eps, momentum, device, dtype)
-        
+
     def forward(self, x: Tensor) -> Tensor:
-        N,C,H,W = x.shape
+        N, C, H, W = x.shape
         x = nchw_to_nhwc(x)
         x = super().forward(x.reshape((-1, C))).reshape(x.shape)
         return nhwc_to_nchw(x)
-        
+
 
 class LayerNorm1d(Module):
     def __init__(self, dim, eps=1e-5, device=None, dtype="float32"):
@@ -227,7 +229,7 @@ class Dropout(Module):
         self.p = p
 
     def forward(self, x: Tensor) -> Tensor:
-        if self.training and self.p > 0.0:  # because it makes the mask all 0
+        if self.training and self.p > 0.0:
             mask = randb(*x.shape, p=(1 - self.p), device=x.device, dtype="float32")
             return (x * mask) / (1 - self.p)
         else:
@@ -243,17 +245,18 @@ class Residual(Module):
         return x + self.fn(x)
 
 
-
 class Sigmoid(Module):
     def __init__(self):
         super().__init__()
 
     def forward(self, x: Tensor) -> Tensor:
         return sigmoid(x)
+
+
 class Softmax(Module):
     def __init__(self):
         super().__init__()
-        
+
     def forward(self, x):
         x_exp = exp(x)
-        return x_exp / x_exp.sum(-1).reshape((-1,1)).broadcast_to(x.shape)
+        return x_exp / x_exp.sum(-1).reshape((-1, 1)).broadcast_to(x.shape)

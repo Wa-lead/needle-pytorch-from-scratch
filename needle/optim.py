@@ -14,7 +14,6 @@ class Optimizer:
             p.grad = None
 
 
-
 class SGD(Optimizer):
     def __init__(self, params, lr=0.01, momentum=0.0, weight_decay=0.0):
         super().__init__(params)
@@ -30,6 +29,7 @@ class SGD(Optimizer):
                 self.u[idx] = 0
             self.u[idx] = self.momentum * self.u[idx] + (1 - self.momentum) * grad
             self.params[idx].data = p.data - self.lr * self.u[idx]
+
     def clip_grad_norm(self, max_norm=0.25):
         total_norm = 0.0
         for p in self.params:

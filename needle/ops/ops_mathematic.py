@@ -56,6 +56,8 @@ class AddScalar(TensorOp):
 
 def add_scalar(a, scalar):
     return AddScalar(scalar)(a)
+
+
 class EWiseMul(TensorOp):
     def compute(self, a: NDArray, b: NDArray):
         return a * b
@@ -67,6 +69,8 @@ class EWiseMul(TensorOp):
 
 def multiply(a, b):
     return EWiseMul()(a, b)
+
+
 class MulScalar(TensorOp):
     def __init__(self, scalar):
         self.scalar = scalar
@@ -80,6 +84,8 @@ class MulScalar(TensorOp):
 
 def mul_scalar(a, scalar):
     return MulScalar(scalar)(a)
+
+
 class PowerScalar(TensorOp):
     """Op raise a tensor to an (integer) power."""
 
@@ -88,11 +94,16 @@ class PowerScalar(TensorOp):
 
     def compute(self, a: NDArray) -> NDArray:
         return a**self.scalar
+
     def gradient(self, out_grad, node):
         node = node.inputs[0]
         return out_grad * self.scalar * power_scalar(node, self.scalar - 1)
+
+
 def power_scalar(a, scalar):
     return PowerScalar(scalar)(a)
+
+
 class EWisePow(TensorOp):
     """Op to element-wise raise a tensor to a power."""
 
@@ -108,6 +119,8 @@ class EWisePow(TensorOp):
 
 def power(a, b):
     return EWisePow()(a, b)
+
+
 class EWiseDiv(TensorOp):
     """Op to element-wise divide two nodes."""
 
@@ -115,21 +128,31 @@ class EWiseDiv(TensorOp):
         if a.ndim != b.ndim:
             b = b.reshape((-1, 1))
         return a / b
+
     def gradient(self, out_grad, node):
         lfs, rhs = node.inputs
         return out_grad / rhs, negate(out_grad) * lfs / power_scalar(rhs, 2)
+
+
 def divide(a, b):
     return EWiseDiv()(a, b)
+
+
 class DivScalar(TensorOp):
     def __init__(self, scalar):
         self.scalar = scalar
 
     def compute(self, a):
         return a / self.scalar
+
     def gradient(self, out_grad, node):
         return out_grad / self.scalar
+
+
 def divide_scalar(a, scalar):
     return DivScalar(scalar)(a)
+
+
 class Transpose(TensorOp):
     def __init__(self, axes: Optional[tuple] = None):
         self.axes = axes
@@ -137,28 +160,36 @@ class Transpose(TensorOp):
     def compute(self, a):
         if self.axes is None:
             return a.swapaxes(-1, -2)
-
         else:
             return a.swapaxes(self.axes[0], self.axes[1])
+
     def gradient(self, out_grad, node):
         if self.axes is None:
             return out_grad.transpose(axes=(-1, -2))
-
         else:
             return transpose(out_grad, self.axes)
+
+
 def transpose(a, axes=None):
     return Transpose(axes)(a)
+
+
 class Reshape(TensorOp):
     def __init__(self, shape):
         self.shape = shape
 
     def compute(self, a):
         return array_api.reshape(a, self.shape)
+
     def gradient(self, out_grad, node):
         x = node.inputs[0]
         return reshape(out_grad, x.shape)
+
+
 def reshape(a, shape):
     return Reshape(shape)(a)
+
+
 class BroadcastTo(TensorOp):
     def __init__(self, shape):
         self.shape = shape
@@ -166,7 +197,6 @@ class BroadcastTo(TensorOp):
     def compute(self, a):
         return array_api.broadcast_to(a, self.shape)
 
-    # this is simply broadcasting back to the same dimensions
     def gradient(self, out_grad, node):
         input_shape = node.inputs[0].shape
         if prod(out_grad.shape) == prod(input_shape):
@@ -178,6 +208,8 @@ class BroadcastTo(TensorOp):
                 axes.append(i)
         out_grad = summation(out_grad, axes=tuple(axes))
         return (out_grad.reshape(input_shape),)
+
+
 def broadcast_to(a, shape):
     return BroadcastTo(shape)(a)
 
@@ -190,7 +222,6 @@ class Summation(TensorOp):
         if not isinstance(self.axes, (tuple, list)):
             return a.sum(self.axes, keepdims=False)
 
-        # (1,2,3)
         if len(self.axes) > 1:
             axes = list(self.axes)[::-1]
             increments = 0
@@ -203,6 +234,7 @@ class Summation(TensorOp):
             return a.sum(keepdims=False)
         else:
             return a.sum(self.axes, keepdims=False)
+
     def gradient(self, out_grad, node):
         input_shape = node.inputs[0].shape
         base_shape = list(input_shape)
@@ -214,6 +246,8 @@ class Summation(TensorOp):
         out_grad = out_grad.reshape(base_shape)
         out_grad = out_grad.broadcast_to(input_shape)
         return (out_grad,)
+
+
 def summation(a, axes=None):
     return Summation(axes)(a)
 
@@ -242,6 +276,7 @@ class MatMul(TensorOp):
             out_slices.append((ai @ bi).numpy())
         out_np = numpy.stack(out_slices).reshape(batch_shape + (M, N))
         return NDArray(out_np.astype(numpy.float32), device=a.device)
+
     def gradient(self, out_grad, node):
         a, b = node.inputs
         a_shape = a.shape
@@ -262,8 +297,11 @@ def matmul(a, b):
 class Negate(TensorOp):
     def compute(self, a):
         return -a
+
     def gradient(self, out_grad, node):
         return negate(out_grad)
+
+
 def negate(a):
     return Negate()(a)
 
@@ -271,9 +309,12 @@ def negate(a):
 class Log(TensorOp):
     def compute(self, a):
         return array_api.log(a)
+
     def gradient(self, out_grad, node):
         lhs = node.inputs[0]
         return out_grad / lhs
+
+
 def log(a):
     return Log()(a)
 
@@ -281,8 +322,11 @@ def log(a):
 class Exp(TensorOp):
     def compute(self, a):
         return array_api.exp(a)
+
     def gradient(self, out_grad, node):
         return out_grad * exp(node.inputs[0])
+
+
 def exp(a):
     return Exp()(a)
 
@@ -290,6 +334,7 @@ def exp(a):
 class ReLU(TensorOp):
     def compute(self, a):
         return array_api.maximum(a, 0)
+
     def gradient(self, out_grad, node):
         input = node.inputs[0]
         value = input.realize_cached_data()
@@ -339,12 +384,10 @@ class Softmax(TensorOp):
         return e_a / e_a.sum(self.axes, keepdims=True).broadcast_to(e_a.shape)
 
     def gradient(self, out_grad: Value, node: Value):
-        lhs = node.inputs[0]  # Softmax output
-        # Compute sum(out_grad * y) along the last axis, keep dimensions for broadcasting
+        lhs = node.inputs[0]
         sum_grad_y = (
             (out_grad * lhs).sum(self.axes)
         )
-        # Compute the gradient
         return (lhs * (out_grad - sum_grad_y),)
 
 
@@ -364,9 +407,12 @@ class Stack(TensorOp):
 
     def compute(self, arrays: TensorTuple) -> Tensor:
         return array_api.stack(arrays, self.axis)
+
     def gradient(self, out_grad, node):
         out_grad = split(out_grad, self.axis)
         return out_grad
+
+
 def stack(arrays, axis):
     return Stack(axis)(make_tuple(*arrays))
 
@@ -383,9 +429,12 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         return array_api.split(A, self.axis)
+
     def gradient(self, out_grad, node):
         out_grad = stack(out_grad, self.axis)
         return (out_grad,)
+
+
 def split(a, axis):
     return Split(axis)(a)
 
@@ -490,5 +539,7 @@ class Conv(TensorOp):
         grad_weight = grad_weight.transpose((0, 2)).transpose((0, 1))
 
         return (grad_inp, grad_weight)
+
+
 def conv(a, b, stride=1, padding=1):
     return Conv(stride, padding)(a, b)
