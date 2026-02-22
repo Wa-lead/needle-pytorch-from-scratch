@@ -148,18 +148,21 @@ def loss_err(h, y):
     return loss, err
 
 
-def train_ptb(model, data, seq_len=40, n_epochs=1, device=None, lr=0.001, optimizer=ndl.optim.SGD):
+def train_ptb(model, data, seq_len=40, n_epochs=1, device=None, lr=0.001, optimizer=ndl.optim.SGD, verbose=True):
     """Train a language model on PTB data."""
+    import time
     np.random.seed(4)
     loss_fn = ndl.nn.SoftmaxLoss()
     opt = optimizer(model.parameters(), lr=lr)
 
     nbatch = (len(data) - 1) // seq_len
     for epoch in range(n_epochs):
+        epoch_start = time.time()
         total_loss = 0.0
         total_correct = 0
         total_samples = 0
         hidden = None
+        batch_idx = 0
         for i in range(0, len(data) - 1, seq_len):
             X, y = ndl.data.get_batch(data, i, seq_len, device=device)
             batch_size = X.shape[1]
@@ -178,6 +181,18 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, device=None, lr=0.001, optimi
             total_loss += loss.data.numpy() * y.shape[0]
             total_correct += (np.argmax(out.numpy(), axis=1) == y.numpy()).sum()
             total_samples += y.shape[0]
+            batch_idx += 1
+
+            if verbose and batch_idx % max(1, nbatch // 5) == 0:
+                avg = float(total_loss / total_samples)
+                acc = float(total_correct / total_samples)
+                print(f"  [{batch_idx}/{nbatch}] loss={avg:.4f} acc={acc:.4f}")
+
+        elapsed = time.time() - epoch_start
+        avg_loss = float(total_loss / total_samples)
+        accuracy = float(total_correct / total_samples)
+        if verbose:
+            print(f"Epoch {epoch+1}/{n_epochs} - loss: {avg_loss:.4f}, acc: {accuracy:.4f}, time: {elapsed:.1f}s")
 
     avg_loss = total_loss / total_samples
     accuracy = total_correct / total_samples
@@ -210,3 +225,74 @@ def evaluate_ptb(model, data, seq_len=40, device=None):
     avg_loss = total_loss / total_samples
     accuracy = total_correct / total_samples
     return accuracy, avg_loss
+
+
+def generate_ptb(model, corpus, prompt, max_len=50, temperature=1.0, device=None):
+    """Generate text from a trained language model.
+
+    Args:
+        model: trained LanguageModel
+        corpus: the Corpus object (for word<->index mapping)
+        prompt: string of space-separated words to seed generation
+        max_len: number of tokens to generate
+        temperature: sampling temperature (lower = more greedy, higher = more random)
+        device: device to run on
+
+    Returns:
+        generated string
+    """
+    model.eval()
+    dictionary = corpus.dictionary
+
+    words = prompt.strip().split()
+    token_ids = []
+    for w in words:
+        if w in dictionary.word2idx:
+            token_ids.append(dictionary.word2idx[w])
+        else:
+            token_ids.append(dictionary.word2idx.get("<unk>", 0))
+
+    hidden = None
+    generated = list(words)
+
+    # Feed the prompt through the model to build up hidden state
+    if len(token_ids) > 1:
+        prompt_input = np.array(token_ids[:-1], dtype=np.float32).reshape(-1, 1)
+        X = ndl.Tensor(prompt_input, device=device)
+        out, hidden = model(X, hidden)
+        if isinstance(hidden, tuple):
+            hidden = tuple(h.detach() for h in hidden)
+        elif hidden is not None:
+            hidden = hidden.detach()
+
+    # Generate tokens one at a time
+    current_token = token_ids[-1]
+    for _ in range(max_len):
+        X = ndl.Tensor(
+            np.array([[current_token]], dtype=np.float32), device=device
+        )  # shape (1, 1)
+        out, hidden = model(X, hidden)
+        if isinstance(hidden, tuple):
+            hidden = tuple(h.detach() for h in hidden)
+        elif hidden is not None:
+            hidden = hidden.detach()
+
+        logits = out.numpy().flatten()
+
+        # Temperature-scaled sampling
+        if temperature <= 0:
+            current_token = int(np.argmax(logits))
+        else:
+            logits = logits / temperature
+            logits -= np.max(logits)
+            probs = np.exp(logits) / np.sum(np.exp(logits))
+            current_token = int(np.random.choice(len(probs), p=probs))
+
+        word = dictionary.idx2word[current_token]
+        generated.append(word)
+
+        if word == "<eos>":
+            break
+
+    model.train()
+    return " ".join(generated)

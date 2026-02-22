@@ -40,24 +40,12 @@ class MultiHeadAttention(Module):
 
         return ndarray.array(mask, device=device)
 
-    def matmul(self, a, b_transpose):
+    def matmul(self, a, b):
         """
-        Batched matrix multiplication.
+        Batched matrix multiplication using the framework's MatMul op,
+        which supports N-D tensors directly.
         """
-        # Reshape 'a' to shape: (batch_size, num_heads, seq_len_q, dim_qk, 1)
-        a = a.reshape((*a.shape, 1))
-        
-        # Reshape 'b_transpose' to shape: (batch_size, num_heads, 1, dim_qk, seq_len_k)
-        b_transpose = b_transpose.reshape((*b_transpose.shape[:-2], 1, *b_transpose.shape[-2:]))
-        
-        # Broadcast 'a' and 'b_transpose' to a common shape for multiplication
-        # Resulting shape: (batch_size, num_heads, seq_len_q, dim_qk, seq_len_k)
-        a = a.broadcast_to((*a.shape[:-1], b_transpose.shape[-1]))
-        b_transpose = b_transpose.broadcast_to(a.shape)
-        
-        # Perform element-wise multiplication and sum over the 'dim_qk' dimension
-        result = (a * b_transpose).sum(axes=3)
-        return result
+        return a @ b
 
 
     def softmax(self, logit):

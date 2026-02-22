@@ -60,6 +60,10 @@ class LanguageModel(nn.Module):
         hidden_size,
         num_layers=1,
         seq_model="lstm",
+        seq_len=40,
+        num_head=4,
+        dim_head=None,
+        dropout=0.0,
         device=None,
         dtype="float32",
     ):
@@ -68,6 +72,9 @@ class LanguageModel(nn.Module):
         self.hidden_size = hidden_size
         self.embedding_size = embedding_size
         self.seq_model = seq_model
+
+        if dim_head is None:
+            dim_head = embedding_size // num_head
 
         self.embedding = nn.Embedding(output_size, embedding_size, device=device, dtype=dtype)
 
@@ -79,14 +86,26 @@ class LanguageModel(nn.Module):
             self.rnn = nn.LSTM(
                 embedding_size, hidden_size, num_layers, device=device, dtype=dtype
             )
+        elif seq_model == "transformer":
+            self.rnn = nn.Transformer(
+                embedding_size, hidden_size, num_layers,
+                num_head=num_head, dim_head=dim_head,
+                dropout=dropout,
+                device=device, dtype=dtype,
+                batch_first=False,
+                sequence_len=seq_len,
+            )
 
-        self.linear = nn.Linear(hidden_size, output_size, device=device, dtype=dtype)
+        if seq_model == "transformer":
+            self.linear = nn.Linear(embedding_size, output_size, device=device, dtype=dtype)
+        else:
+            self.linear = nn.Linear(hidden_size, output_size, device=device, dtype=dtype)
 
     def forward(self, x, h=None):
         """
         Args:
             x: shape (seq_len, batch_size) - integer token indices
-            h: hidden state (for RNN) or (h, c) tuple (for LSTM)
+            h: hidden state (for RNN/LSTM), ignored for transformer
 
         Returns:
             output: shape (batch_size * seq_len, output_size) - logits
@@ -95,9 +114,12 @@ class LanguageModel(nn.Module):
         seq_len, batch_size = x.shape
         emb = self.embedding(x)  # (seq_len, batch_size, embedding_size)
 
-        output, h_out = self.rnn(emb, h)  # output: (seq_len, bs, hidden_size)
+        output, h_out = self.rnn(emb, h)
 
-        output = output.reshape((seq_len * batch_size, self.hidden_size))
+        if self.seq_model == "transformer":
+            output = output.reshape((seq_len * batch_size, self.embedding_size))
+        else:
+            output = output.reshape((seq_len * batch_size, self.hidden_size))
         output = self.linear(output)  # (seq_len * batch_size, output_size)
 
         return output, h_out
