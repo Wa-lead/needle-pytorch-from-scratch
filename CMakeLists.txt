@@ -39,7 +39,7 @@ pybind11_strip(ndarray_backend_cpu)
 # directly output to ffi folder
 set_target_properties(ndarray_backend_cpu
   PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/needle/backend_ndarray
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/needle/backend_ndarray
   CXX_VISIBILITY_PRESET "hidden"
 )
 
@@ -78,7 +78,7 @@ if(CUDA_FOUND)
   # directly output to ffi folder
   set_target_properties(ndarray_backend_cuda
     PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/needle/backend_ndarray
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/needle/backend_ndarray
     CXX_VISIBILITY_PRESET "hidden"
     CUDA_VISIBILITY_PRESET "hidden"
 )

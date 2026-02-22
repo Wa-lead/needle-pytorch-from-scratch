@@ -1,35 +1,72 @@
-# Needle: A Deep Learning Framework for CMU's dlsys Course
+# Needle
 
-This project is part of the Carnegie Mellon University (CMU) Deep Learning Systems (dlsys) course (10-414/714)  . Needle is a deep learning framework that provides the foundational components needed to build and train neural networks, with a focus on flexibility and extensibility.
+A from-scratch deep learning framework featuring automatic differentiation, a custom NDArray with C++ CPU backend, neural network modules, and optimizers.
 
-## Key Components
+## Features
 
-- **Tensor Data Structure**: 
-  - The `Tensor` is the core data structure in Needle, responsible for maintaining the computation graph necessary for automatic differentiation. It wraps around the `NDArray`, which handles the actual data storage and operations. The `Tensor` can utilize different backends, such as NumPy or custom implementations, for efficient numerical computations, depending on the system's configuration.
+- **Automatic Differentiation** -- reverse-mode autograd with lazy evaluation support
+- **Custom NDArray** -- strided N-dimensional array backed by a C++ (pybind11) CPU kernel with tiled matrix multiplication; optional CUDA backend
+- **Neural Network Modules** -- Linear, Conv2d, BatchNorm, LayerNorm, Dropout, RNN, LSTM, Embedding, and more
+- **Optimizers** -- SGD (with momentum) and Adam, with gradient clipping support
+- **Datasets** -- MNIST, CIFAR-10, and Penn Treebank loaders with data augmentation transforms
 
-- **Automatic Differentiation (Autodiff)**:
-  - Needle includes an `autograd` module that supports automatic differentiation. This module tracks operations performed on `Tensors` and builds a computation graph, enabling efficient gradient computation necessary for training neural networks. The integration with the `Tensor` structure allows for seamless gradient propagation through complex networks.
+## Architecture
 
-- **Neural Network Modules (`nn.modules`)**:
-  - The framework provides a set of neural network modules (e.g., layers like `Linear`, `Conv2D`) under the `nn` package. These modules are designed to be composable, enabling the construction of complex neural networks by stacking simple building blocks. The `nn.modules` are tightly integrated with the autodiff system, ensuring that gradients are automatically computed during the backward pass.
+```
+needle/
+  autograd.py            # Tensor, computational graph, backpropagation
+  backend_selection.py   # Runtime backend dispatch (NDArray / NumPy)
+  backend_ndarray/
+    ndarray.py           # Strided NDArray implementation
+    ndarray_backend_cpu  # C++ CPU backend (pybind11)
+  ops/
+    ops_mathematic.py    # Core math ops (add, matmul, conv, etc.)
+    ops_logarithmic.py   # LogSoftmax, LogSumExp
+  nn/
+    nn_basic.py          # Linear, BatchNorm, LayerNorm, Dropout, etc.
+    nn_conv.py           # Conv, ConvBN
+    nn_sequence.py       # RNN, LSTM, Embedding
+  init/                  # Weight initialization (Xavier, Kaiming)
+  optim.py               # SGD, Adam
+  data/                  # Dataset and DataLoader
+src/
+  ndarray_backend_cpu.cc   # C++ source for CPU backend
+  ndarray_backend_cuda.cu  # CUDA source (stub)
+```
 
-- **Backend Support (including NumPy)**:
-  - Needle is designed to be backend-agnostic. The primary backend is often NumPy, but the framework also supports custom backends, allowing for flexibility in how tensor operations are executed. The `backend_numpy` module, for example, implements the necessary operations to perform tensor computations using NumPy, but alternative backends can be utilized depending on performance needs or specific use cases.
+## Quick Start
 
-- **Operations (`ops`)**:
-  - The `ops` module defines the core mathematical operations that are used with tensors in the autodiff system. These operations are the building blocks for creating computational graphs, which are essential for tracking and computing gradients. Key operations include:
-    - **`ops_mathematic.py`**: Implements basic mathematical operations like addition, multiplication, and more.
-    - **`ops_logarithmic.py`**: Handles logarithmic functions and related operations.
-    - **`ops_tuple.py`**: Provides operations that work on tuple structures, useful in certain advanced network configurations.
+### Build the C++ backend
 
-## Project Structure Overview
+```bash
+mkdir -p build && cd build
+cmake ..
+make -j$(nproc)
+```
 
-- **`autograd.py`**: Implements the automatic differentiation engine.
-- **`backend_ndarray/`**: Contains implementations of the `NDArray` for different backends.
-- **`nn/`**: Includes neural network modules (`nn.modules`) for constructing models.
-- **`ops/`**: Defines the mathematical operations used throughout the framework, particularly for tensors in the autodiff system.
-- **`data/`**: Provides data handling and transformation utilities, including dataset loaders.
+### Run
 
-## About
+```python
+import needle as ndl
+import needle.nn as nn
 
-This project was developed as part of the CMU dlsys course, where students learn to design and implement the core components of deep learning systems. Needle serves as a hands-on educational tool to understand the inner workings of deep learning frameworks.
+# Create a simple model
+model = nn.Sequential(
+    nn.Linear(784, 128),
+    nn.ReLU(),
+    nn.Linear(128, 10),
+)
+
+# Forward pass
+x = ndl.Tensor(np.random.randn(32, 784).astype("float32"))
+out = model(x)
+
+# Backward pass
+out.sum().backward()
+```
+
+See `examples/mnist_resnet.ipynb` for a full training example on MNIST with a ResNet-style MLP.
+
+## License
+
+MIT

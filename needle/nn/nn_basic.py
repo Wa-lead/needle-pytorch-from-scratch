@@ -9,6 +9,12 @@ import numpy as np
 from abc import abstractmethod
 from typing import List
 
+def nchw_to_nhwc(x):
+    return x.transpose().transpose((1, 3))
+
+def nhwc_to_nchw(x):
+    return x.transpose((1,3)).transpose()  
+
 
 class Parameter(Tensor):
     """Indicates a trainable tensor"""
@@ -141,7 +147,6 @@ class Sequential(Module):
 
 class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor):
-        ### BEGIN YOUR SOLUTION
         num, classes = logits.shape
         y_one_hot = one_hot(classes, y)
         loss = (
@@ -151,9 +156,6 @@ class SoftmaxLoss(Module):
         loss = divide_scalar(loss, -num)
         loss = summation(loss)
         return loss
-        ### END YOUR SOLUTION
-
-
 class BatchNorm1d(Module):
     def __init__(self, dim, eps=1e-5, momentum=0.1, device=None, dtype="float32"):
         super().__init__()
@@ -187,6 +189,17 @@ class BatchNorm1d(Module):
         return x
 
 
+class BatchNorm2d(BatchNorm1d):
+    def __init__(self, dim, eps=0.00001, momentum=0.1, device=None, dtype="float32"):
+        super().__init__(dim, eps, momentum, device, dtype)
+        
+    def forward(self, x: Tensor) -> Tensor:
+        N,C,H,W = x.shape
+        x = nchw_to_nhwc(x)
+        x = super().forward(x.reshape((-1, C))).reshape(x.shape)
+        return nhwc_to_nchw(x)
+        
+
 class LayerNorm1d(Module):
     def __init__(self, dim, eps=1e-5, device=None, dtype="float32"):
         super().__init__()
@@ -196,7 +209,6 @@ class LayerNorm1d(Module):
         self.beta = Parameter(zeros(dim, device=device, dtype="float32"))
 
     def forward(self, x: Tensor) -> Tensor:
-        ### BEGIN YOUR SOLUTION
         batch = x.shape[0]
         mean = broadcast_to(reshape(summation(x, 1) / self.dim, (batch, 1)), x.shape)
         std = broadcast_to(
@@ -231,4 +243,17 @@ class Residual(Module):
         return x + self.fn(x)
 
 
-class LSTMCell: ...
+
+class Sigmoid(Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x: Tensor) -> Tensor:
+        return sigmoid(x)
+class Softmax(Module):
+    def __init__(self):
+        super().__init__()
+        
+    def forward(self, x):
+        x_exp = exp(x)
+        return x_exp / x_exp.sum(-1).reshape((-1,1)).broadcast_to(x.shape)

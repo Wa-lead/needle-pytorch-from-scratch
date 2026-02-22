@@ -48,159 +48,88 @@ namespace needle
       }
     }
 
-    // void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
-    //              std::vector<uint32_t> strides, size_t offset) {
-    //   /**
-    //    * Compact an array in memory
-    //    *
-    //    * Args:
-    //    *   a: non-compact representation of the array, given as input
-    //    *   out: compact version of the array to be written
-    //    *   shape: shapes of each dimension for a and out
-    //    *   strides: strides of the *a* array (not out, which has compact strides)
-    //    *   offset: offset of the *a* array (not out, which has zero offset, being compact)
-    //    *
-    //    * Returns:
-    //    *  void (you need to modify out directly, rather than returning anything; this is true for all the
-    //    *  function will implement here, so we won't repeat this note.)
-    //    */
-    //   /// BEGIN YOUR SOLUTION
-    //   uint32_t dim = shape.size(); // ndim
-    //   uint32_t cnt = 0; // count -> indicating contiguity
-    //   uint32_t total_size = 1; // -> size of the elements in the array
-    //   for (size_t i = 0; i < dim; ++i) {
-    //     total_size *= shape[i];
-    //   }
+void Compact(const AlignedArray& a, AlignedArray* out, std::vector<int32_t> shape,
+             std::vector<int32_t> strides, size_t offset) {
+  /**
+   * Compact an array in memory
+   * 
+   * Args:
+   *   a: non-compact represntation of the array, given as input
+   *   out: compact version of the array to be written
+   *   shape: shapes of each dimension for a and out
+   *   strides: strides of the *a* array (not out, which has compact strides)
+   *   offset: offset of the *a* array (not out, which has zero offset, being compact)
+   * 
+   * Returns:
+   *  void (you need to modify out directly, rather than returning anything; this is true for all the
+   *  function will implement here, so we won't repeat this note.)
+   */
+  uint32_t dim = shape.size();
+  uint32_t cnt = 0;
+  uint32_t total_size = 1;
+  for (size_t i = 0; i < dim; ++i) {
+    total_size *= shape[i];
+  }
 
-    //   std::vector<size_t> indices(dim, 0);
-    //   while (cnt < total_size) {
-    //     size_t idx = offset;
-    //     for (size_t i = 0; i < dim; ++i) {
-    //       idx += indices[i] * strides[i];
-    //     }
-    //     if (idx < a.size)
-    //       out->ptr[cnt] = a.ptr[idx];
-
-    //     indices[dim-1]++;
-    //     for (size_t i = 0; i < dim; ++i) {
-    //       if (indices[dim-i-1] >= shape[dim-1-i] && i < dim) {
-    //         indices[dim-1-i] = 0;
-    //         indices[dim-2-i]++;
-    //       }
-    //     }
-    //     cnt++;
-    //   }
-    //   /// END YOUR SOLUTION
-    // }
-
-    void Compact(const AlignedArray &a, AlignedArray *out, std::vector<int32_t> shape,
-                 std::vector<int32_t> strides, size_t offset)
-    {
-      /**
-       * Compact an array in memory
-       *
-       * Args:
-       *   a: non-compact representation of the array, given as input
-       *   out: compact version of the array to be written
-       *   shape: shapes of each dimension for a and out
-       *   strides: strides of the *a* array (not out, which has compact strides)
-       *   offset: offset of the *a* array (not out, which has zero offset, being compact)
-       *
-       * Returns:
-       *  void (you need to modify out directly, rather than returning anything; this is true for all the
-       *  function will implement here, so we won't repeat this note.)
-       */
-      /// BEGIN SOLUTION
-      uint32_t dim = shape.size(); // ndim
-      uint32_t cnt = 0;
-      uint32_t total_size = 1;
-
-      // now count the number of elements in the array
-      for (size_t i = 0; i < dim; ++i)
-      {
-        total_size *= shape[i];
-      }
-
-      // init a vector that holds the current index at each dimension
-      std::vector<size_t> indices(dim, 0);
-
-      // copy elements
-      while (cnt < total_size)
-      {
-        size_t idx = offset;
-
-        // calculate idx
-        for (size_t i = 0; i < dim; ++i)
-        {
-          idx += indices[i] * strides[i];
-        }
-
-        if (idx < a.size)
-        {
-          out->ptr[cnt] = a.ptr[idx];
-        }
-
-        // update position
-        indices[dim - 1]++;
-        for (size_t i = 0; i < dim; ++i)
-        {
-          if (indices[dim - i - 1] >= shape[dim - 1 - i] && i < dim)
-          {
-            indices[dim - 1 - i] = 0;
-            indices[dim - 2 - i]++;
-          }
-        }
-        cnt++;
-      }
-      /// END SOLUTION
+  std::vector<size_t> indices(dim, 0);
+  while (cnt < total_size) {
+    size_t idx = offset;
+    for (size_t i = 0; i < dim; ++i) {
+      idx += indices[i] * strides[i];
     }
-
-    void EwiseSetitem(const AlignedArray &a, AlignedArray *out, std::vector<uint32_t> shape,
-                      std::vector<uint32_t> strides, size_t offset)
-    {
-      /**
-       * Set items in a (non-compact) array
-       *
-       * Args:
-       *   a: _compact_ array whose items will be written to out
-       *   out: non-compact array whose items are to be written
-       *   shape: shapes of each dimension for a and out
-       *   strides: strides of the *out* array (not a, which has compact strides)
-       *   offset: offset of the *out* array (not a, which has zero offset, being compact)
-       */
-      /// BEGIN YOUR SOLUTION
-      uint32_t dim = shape.size();
-      uint32_t cnt = 0;
-      uint32_t total_size = 1;
-      for (size_t i = 0; i < dim; ++i)
-      {
-        total_size *= shape[i];
+    if (idx < a.size)
+      out->ptr[cnt++] = a.ptr[idx];
+    if (cnt >= total_size)
+      break;
+    indices[dim-1]++;
+    for (size_t i = 0; i < dim; ++i) {
+      if (indices[dim-i-1] >= shape[dim-1-i] && i < dim) {
+        indices[dim-1-i] = 0;
+        indices[dim-2-i]++;
       }
-
-      std::vector<size_t> indices(dim, 0);
-      while (cnt < total_size)
-      {
-        size_t idx = offset;
-        for (size_t i = 0; i < dim; ++i)
-        {
-          idx += indices[i] * strides[i];
-        }
-        if (idx < out->size)
-          out->ptr[idx] = a.ptr[cnt];
-
-        indices[dim - 1]++;
-        for (size_t i = 0; i < dim; ++i)
-        {
-          if (indices[dim - i - 1] >= shape[dim - 1 - i] && i < dim)
-          {
-            indices[dim - 1 - i] = 0;
-            indices[dim - 2 - i]++;
-          }
-        }
-        cnt++;
-      }
-      /// END YOUR SOLUTION
     }
+  }
+}
+
+void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<int32_t> shape,
+                  std::vector<int32_t> strides, size_t offset) {
+  /**
+   * Set items in a (non-compact) array
+   * 
+   * Args:
+   *   a: _compact_ array whose items will be written to out
+   *   out: non-compact array whose items are to be written
+   *   shape: shapes of each dimension for a and out
+   *   strides: strides of the *out* array (not a, which has compact strides)
+   *   offset: offset of the *out* array (not a, which has zero offset, being compact)
+   */
+  uint32_t dim = shape.size();
+  uint32_t cnt = 0;
+  uint32_t total_size = 1;
+  for (size_t i = 0; i < dim; ++i) {
+    total_size *= shape[i];
+  }
+
+  std::vector<size_t> indices(dim, 0);
+  while (cnt < total_size) {
+    size_t idx = offset;
+    for (size_t i = 0; i < dim; ++i) {
+      idx += indices[i] * strides[i];
+    }
+    if (idx < out->size)
+      out->ptr[idx] = a.ptr[cnt++];
+    if (cnt >= total_size)
+      break;
+    indices[dim-1]++;
+    for (size_t i = 0; i < dim; ++i) {
+      if (indices[dim-i-1] >= shape[dim-1-i] && i < dim) {
+        indices[dim-1-i] = 0;
+        indices[dim-2-i]++;
+      }
+    }
+  }
+}
+
     void ScalarSetitem(const size_t size, scalar_t val, AlignedArray *out, std::vector<uint32_t> shape,
                        std::vector<uint32_t> strides, size_t offset)
     {
@@ -217,8 +146,6 @@ namespace needle
        *   strides: strides of the out array
        *   offset: offset of the out array
        */
-
-      /// BEGIN YOUR SOLUTION
       uint32_t dim = shape.size();
       uint32_t cnt = 0;
       uint32_t total_size = 1;
@@ -248,7 +175,6 @@ namespace needle
         }
         cnt++;
       }
-      /// END YOUR SOLUTION
     }
 
     void EwiseAdd(const AlignedArray &a, const AlignedArray &b, AlignedArray *out)
@@ -272,7 +198,7 @@ namespace needle
         out->ptr[i] = a.ptr[i] + val;
       }
     }
-
+    
     /**
      * In the code the follows, use the above template to create analogous element-wise
      * and and scalar operators for the following functions.  See the numpy backend for
@@ -292,8 +218,6 @@ namespace needle
      * functions (however you want to do so, as long as the functions match the proper)
      * signatures above.
      */
-
-    /// BEGIN YOUR SOLUTION
     enum class _EwiseOp
     {
       MUL,
@@ -411,8 +335,6 @@ namespace needle
        *   n: columns of a / rows of b
        *   p: columns of b / out
        */
-
-      /// BEGIN YOUR SOLUTION
       for (size_t i = 0; i < m; ++i)
       {
         for (size_t j = 0; j < p; ++j)
@@ -425,7 +347,6 @@ namespace needle
           out->ptr[i * p + j] = val;
         }
       }
-      /// END YOUR SOLUTION
     }
 
     inline void AlignedDot(const float *__restrict__ a,
@@ -450,11 +371,9 @@ namespace needle
        *   out: compact 2D array of size TILE x TILE to write to
        */
 
-      a = (const float *)__builtin_assume_aligned(a, ALIGNMENT);
+      a = (const float *)__builtin_assume_aligned(a, TILE * ELEM_SIZE);
       b = (const float *)__builtin_assume_aligned(b, ALIGNMENT);
       out = (float *)__builtin_assume_aligned(out, ALIGNMENT);
-
-      /// BEGIN SOLUTION
       float c0;
       const float *a0; // pointer to the current row of a
       for (size_t i = 0; i < TILE; ++i)
@@ -474,8 +393,6 @@ namespace needle
           out[i * TILE + j] = c0;
         }
       }
-
-      /// END SOLUTION
     }
 
     void MatmulTiled(const AlignedArray &a, const AlignedArray &b, AlignedArray *out, uint32_t m,
@@ -500,7 +417,6 @@ namespace needle
        *   p: columns of b / out
        *
        */
-      /// BEGIN YOUR SOLUTION
       const size_t TILE2 = TILE * TILE;
 
       /** assume m=4, n=4 , p=2, TILE=2 */
@@ -558,7 +474,6 @@ namespace needle
       B = nullptr;
       delete[] C;
       C = nullptr;
-      /// END YOUR SOLUTION
     }
 
     void ReduceMax(const AlignedArray &a, AlignedArray *out, size_t reduce_size)
@@ -571,8 +486,6 @@ namespace needle
  *   out: compact array to write into
  *   reduce_size: size of the dimension to reduce over
  */
-
-/// BEGIN YOUR SOLUTION
 #pragma omp parallel for
       for (size_t i = 0; i < out->size; ++i)
       {
@@ -583,8 +496,8 @@ namespace needle
         }
         out->ptr[i] = val;
       }
-      /// END YOUR SOLUTION
     }
+
     void ReduceSum(const AlignedArray &a, AlignedArray *out, size_t reduce_size)
     {
       /**
@@ -595,10 +508,8 @@ namespace needle
        *   out: compact array to write into
        *   reduce_size: size of the dimension to reduce over
        */
-
-      /// BEGIN YOUR SOLUTION
 #pragma omp parallel for
-      for (size_t i = 0; i < out->size; ++i)
+      for (size_t i = 0; i < out->size; ++i) 
       {
         scalar_t val = 0.0;
         for (size_t j = 0; j < reduce_size; ++j)
@@ -607,7 +518,6 @@ namespace needle
         }
         out->ptr[i] = val;
       }
-      /// END YOUR SOLUTION
     }
 
   }

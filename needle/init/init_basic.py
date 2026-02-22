@@ -2,57 +2,52 @@ import math
 import needle as ndl
 
 
+
 def rand(*shape, low=0.0, high=1.0, device=None, dtype="float32", requires_grad=False):
-    """Generate random numbers uniform between low and high"""
+    """ Generate random numbers uniform between low and high """
     device = ndl.cpu() if device is None else device
-    array = device.rand(*shape) * (high - low) + low
+    import numpy as _np
+    array = _np.random.rand(*shape).astype(dtype) * _np.float32(high - low) + _np.float32(low)
     return ndl.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def randn(*shape, mean=0.0, std=1.0, device=None, dtype="float32", requires_grad=False):
-    """Generate random normal with specified mean and std deviation"""
+    """ Generate random normal with specified mean and std deviation """
     device = ndl.cpu() if device is None else device
-    array = device.randn(*shape) * std + mean
+    import numpy as _np
+    array = _np.random.randn(*shape).astype(dtype) * _np.float32(std) + _np.float32(mean)
     return ndl.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def constant(*shape, c=1.0, device=None, dtype="float32", requires_grad=False):
-    """Generate constant Tensor"""
+    """ Generate constant Tensor """
     device = ndl.cpu() if device is None else device
-    array = device.ones(*shape, dtype=dtype) * c  # note: can change dtype
+    array = device.full(shape, dtype=dtype, fill_value=c)
     return ndl.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def ones(*shape, device=None, dtype="float32", requires_grad=False):
-    """Generate all-ones Tensor"""
-    return constant(
-        *shape, c=1.0, device=device, dtype=dtype, requires_grad=requires_grad
-    )
+    """ Generate all-ones Tensor """
+    return constant(*shape, c=1.0, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def zeros(*shape, device=None, dtype="float32", requires_grad=False):
-    """Generate all-zeros Tensor"""
-
-    return constant(
-        *shape, c=0.0, device=device, dtype=dtype, requires_grad=requires_grad
-    )
+    """ Generate all-zeros Tensor """
+    return constant(*shape, c=0.0, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def randb(*shape, p=0.5, device=None, dtype="bool", requires_grad=False):
-    """Generate binary random Tensor"""
+    """ Generate binary random Tensor """
     device = ndl.cpu() if device is None else device
     array = device.rand(*shape) <= p
     return ndl.Tensor(array, device=device, dtype=dtype, requires_grad=requires_grad)
 
 
 def one_hot(n, i, device=None, dtype="float32", requires_grad=False):
-    """Generate one-hot encoding Tensor"""
+    """ Generate one-hot encoding Tensor """
     device = ndl.cpu() if device is None else device
-    return ndl.Tensor(
-        device.one_hot(n, i.numpy(), dtype=dtype),
-        device=device,
-        requires_grad=requires_grad,
-    )
+    return ndl.Tensor(device.one_hot(n,i.numpy().astype(int), dtype=dtype), device=device, requires_grad=requires_grad)
+
 
 
 def zeros_like(array, *, device=None, requires_grad=False):
@@ -67,3 +62,4 @@ def ones_like(array, *, device=None, requires_grad=False):
     return ones(
         *array.shape, dtype=array.dtype, device=device, requires_grad=requires_grad
     )
+

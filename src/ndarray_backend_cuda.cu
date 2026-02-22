@@ -96,10 +96,7 @@ __global__ void CompactKernel(const scalar_t* a, scalar_t* out, size_t size, Cud
    *   offset: offset of out array
    */
   size_t gid = blockIdx.x * blockDim.x + threadIdx.x;
-
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 void Compact(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape,
@@ -140,9 +137,7 @@ void EwiseSetitem(const CudaArray& a, CudaArray* out, std::vector<int32_t> shape
    *   strides: strides of the *out* array (not a, which has compact strides)
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 
@@ -162,9 +157,7 @@ void ScalarSetitem(size_t size, scalar_t val, CudaArray* out, std::vector<int32_
    *   strides: strides of the out array
    *   offset: offset of the out array
    */
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -246,10 +239,7 @@ void Matmul(const CudaArray& a, const CudaArray& b, CudaArray* out, uint32_t M, 
    *   N: columns of a / rows of b
    *   P: columns of b / out
    */
-
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -267,9 +257,7 @@ void ReduceMax(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   out: compact array to write into
    *   redice_size: size of the dimension to reduce over
    */
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 
@@ -284,9 +272,7 @@ void ReduceSum(const CudaArray& a, CudaArray* out, size_t reduce_size) {
    *   out: compact array to write into
    *   redice_size: size of the dimension to reduce over
    */
-  /// BEGIN SOLUTION
   assert(false && "Not Implemented");
-  /// END SOLUTION
 }
 
 }  // namespace cuda

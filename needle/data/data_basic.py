@@ -59,26 +59,20 @@ class DataLoader:
                                            range(batch_size, len(dataset), batch_size))
 
     def __iter__(self):
-            ### BEGIN YOUR SOLUTION
             self.idx = 0
-            self.len = len(self.dataset) // self.batch_size
             if self.shuffle:
                 tmp_range = np.arange(len(self.dataset))
                 np.random.shuffle(tmp_range)
                 self.ordering = np.array_split(tmp_range,
                 range(self.batch_size, len(self.dataset), self.batch_size))
-        ### END YOUR SOLUTION
             return self
 
     def __next__(self):
-        ### BEGIN YOUR SOLUTION
-        if self.idx < self.len:
+        if self.idx < len(self.ordering):
             data = self.dataset[self.ordering[self.idx]]
             self.idx += 1
             return [Tensor(x) for x in data]
         else:
             raise StopIteration
-        ### END YOUR SOLUTION
-
     def __len__(self):
         return len(self.dataset)

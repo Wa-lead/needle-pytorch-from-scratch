@@ -1,0 +1,13 @@
+[project]
+name = "needle"
+version = "0.1.0"
+description = "A from-scratch deep learning framework with autograd, NDArray, and neural network modules."
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pybind11",
+]
+
+[build-system]
+requires = ["setuptools", "pybind11"]
+build-backend = "setuptools.backends._legacy:_Backend"
