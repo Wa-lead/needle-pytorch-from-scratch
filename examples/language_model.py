@@ -1,3 +1,7 @@
+import sys
+sys.path.append('.')
+sys.path.append('./apps')
+
 import needle as ndl
 from models import LanguageModel
 from simple_ml import train_ptb, evaluate_ptb, generate_ptb
@@ -30,6 +34,6 @@ eval_acc, eval_loss = evaluate_ptb(model, train_data, seq_len=20, device=device)
 print(f"Eval  - accuracy: {float(eval_acc):.4f}, loss: {float(eval_loss):.4f}")
 
 print("\n--- Generation ---")
-for prompt in ["the company", "we have", "in the"]:
+for prompt in ["my name is", "we have", "in the"]:
     text = generate_ptb(model, corpus, prompt, max_len=30, temperature=0.8, device=device)
     print(f"  '{prompt}' -> {text}")

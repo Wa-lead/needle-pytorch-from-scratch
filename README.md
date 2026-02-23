@@ -1,71 +1,78 @@
 # Needle
 
-A from-scratch deep learning framework featuring automatic differentiation, a custom NDArray with C++ CPU backend, neural network modules, and optimizers.
+A deep learning framework built entirely from scratch -- tensors, autograd, neural network modules, optimizers, and a custom C++ backend. No PyTorch, no TensorFlow, just raw implementations from first principles.
 
-## Features
-
-- **Automatic Differentiation** -- reverse-mode autograd with lazy evaluation support
-- **Custom NDArray** -- strided N-dimensional array backed by a C++ (pybind11) CPU kernel with tiled matrix multiplication; optional CUDA backend
-- **Neural Network Modules** -- Linear, Conv2d, BatchNorm, LayerNorm, Dropout, RNN, LSTM, Embedding, and more
-- **Optimizers** -- SGD (with momentum) and Adam, with gradient clipping support
-- **Datasets** -- MNIST, CIFAR-10, and Penn Treebank loaders with data augmentation transforms
+Built as part of Carnegie Mellon University's [10-414/714: Deep Learning Systems](https://dlsyscourse.org/) course.
 
 ## Architecture
 
-```
-needle/
-  autograd.py            # Tensor, computational graph, backpropagation
-  backend_selection.py   # Runtime backend dispatch (NDArray / NumPy)
-  backend_ndarray/
-    ndarray.py           # Strided NDArray implementation
-    ndarray_backend_cpu  # C++ CPU backend (pybind11)
-  ops/
-    ops_mathematic.py    # Core math ops (add, matmul, conv, etc.)
-    ops_logarithmic.py   # LogSoftmax, LogSumExp
-  nn/
-    nn_basic.py          # Linear, BatchNorm, LayerNorm, Dropout, etc.
-    nn_conv.py           # Conv, ConvBN
-    nn_sequence.py       # RNN, LSTM, Embedding
-  init/                  # Weight initialization (Xavier, Kaiming)
-  optim.py               # SGD, Adam
-  data/                  # Dataset and DataLoader
-src/
-  ndarray_backend_cpu.cc   # C++ source for CPU backend
-  ndarray_backend_cuda.cu  # CUDA source (stub)
+![Needle Architecture](needle_architecture.png)
+
+## What's Inside
+
+### Autograd Engine
+Reverse-mode automatic differentiation with a computational graph that tracks operations, builds a topological ordering, and backpropagates gradients.
+
+### Operations
+Each op implements both `compute` (forward) and `gradient` (backward):
+
+MatMul, Conv, ReLU, Sigmoid, Tanh, Softmax, LogSumExp, LogSoftmax, Transpose, Reshape, BroadcastTo, Summation, Stack, Split, Flip, Dilate, EWiseAdd, EWiseMul, EWiseDiv, EWisePow, Negate, Log, Exp
+
+### Neural Network Modules
+- **Basic**: Linear, Flatten, ReLU, Sigmoid, Softmax, Dropout, BatchNorm1d, BatchNorm2d, LayerNorm1d, Sequential, Residual
+- **Convolution**: Conv, ConvBN
+- **Sequence**: RNNCell, RNN, LSTMCell, LSTM, Embedding
+- **Transformer**: MultiHeadAttention, AttentionLayer, TransformerLayer, Transformer
+- **Loss**: SoftmaxLoss
+
+### Backend
+A custom strided NDArray that supports views (reshape, permute, slice) without copying memory. Two backends:
+- **C++ CPU** -- pybind11 module with 256-byte aligned arrays and tiled matrix multiplication (`src/ndarray_backend_cpu.cc`)
+- **NumPy** -- pure Python reference backend for debugging
+
+### Optimizers
+- **SGD** with momentum and weight decay
+- **Adam** with bias correction and weight decay
+
+### Weight Initialization
+Xavier uniform/normal, Kaiming uniform/normal
+
+### Data Pipeline
+DataLoader with batching and shuffling, datasets for MNIST, CIFAR-10, and Penn Treebank, and transforms (RandomFlipHorizontal, RandomCrop).
+
+## Example: Transformer Language Model
+
+A transformer-based language model trained on the [Penn Treebank](https://paperswithcode.com/dataset/penn-treebank) dataset for next-token prediction and text generation.
+
+```python
+import needle as ndl
+from models import LanguageModel
+from simple_ml import train_ptb, generate_ptb
+
+corpus = ndl.data.Corpus("data/ptb")
+train_data = ndl.data.batchify(corpus.train, batch_size=64, device=device, dtype="float32")
+
+model = LanguageModel(
+    embedding_size=20, output_size=len(corpus.dictionary),
+    hidden_size=32, num_layers=1, seq_model='transformer',
+    seq_len=20, num_head=4, dim_head=5, device=device,
+)
+
+train_ptb(model, train_data, seq_len=20, n_epochs=10, lr=0.003, optimizer=ndl.optim.Adam)
+generate_ptb(model, corpus, "we have", max_len=30, temperature=0.8, device=device)
 ```
 
-## Quick Start
+<!-- TODO: training loss plot -->
 
-### Build the C++ backend
+<!-- TODO: inference example output -->
+
+## Build
 
 ```bash
 mkdir -p build && cd build
 cmake ..
 make -j$(nproc)
 ```
-
-### Run
-
-```python
-import needle as ndl
-import needle.nn as nn
-
-# Create a simple model
-model = nn.Sequential(
-    nn.Linear(784, 128),
-    nn.ReLU(),
-    nn.Linear(128, 10),
-)
-
-# Forward pass
-x = ndl.Tensor(np.random.randn(32, 784).astype("float32"))
-out = model(x)
-
-# Backward pass
-out.sum().backward()
-```
-
-See `examples/mnist_resnet.ipynb` for a full training example on MNIST with a ResNet-style MLP.
 
 ## License
 

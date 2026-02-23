@@ -29,13 +29,9 @@ class CPUDevice(Device):
         return numpy.ones(shape, dtype=dtype)
 
     def randn(self, *shape):
-        # note: numpy doesn't support types within standard random routines, and
-        # .astype("float32") does work if we're generating a singleton
         return numpy.random.randn(*shape)
 
     def rand(self, *shape):
-        # note: numpy doesn't support types within standard random routines, and
-        # .astype("float32") does work if we're generating a singleton
         return numpy.random.rand(*shape)
 
     def one_hot(self, n, i, dtype="float32"):

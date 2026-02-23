@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import numdifftools as nd
 sys.path.append("./src")
+sys.path.append("./apps")
 import mugrade
 from simple_ml import *
 try:
