@@ -42,7 +42,7 @@ DataLoader with batching and shuffling, datasets for MNIST, CIFAR-10, and Penn T
 
 ## Example: Transformer Language Model
 
-A transformer-based language model trained on the [Penn Treebank](https://paperswithcode.com/dataset/penn-treebank) dataset for next-token prediction and text generation.
+A transformer-based language model trained on the [Penn Treebank](https://paperswithcode.com/dataset/penn-treebank) dataset for text generation.
 
 ```python
 import needle as ndl
