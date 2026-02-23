@@ -61,6 +61,9 @@ model = LanguageModel(
 train_ptb(model, train_data, seq_len=20, n_epochs=10, lr=0.003, optimizer=ndl.optim.Adam)
 generate_ptb(model, corpus, "we have", max_len=30, temperature=0.8, device=device)
 ```
-----
+### Training
 ![Model training (Transformer on PTB)](LM_training.png)
+
+### Inference
+![Text generation examples](LM_generation.png)
 
