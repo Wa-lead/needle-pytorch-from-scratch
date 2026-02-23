@@ -61,8 +61,6 @@ model = LanguageModel(
 train_ptb(model, train_data, seq_len=20, n_epochs=10, lr=0.003, optimizer=ndl.optim.Adam)
 generate_ptb(model, corpus, "we have", max_len=30, temperature=0.8, device=device)
 ```
-
-<!-- TODO: training loss plot -->
-
-<!-- TODO: inference example output -->
+----
+![Model training (Transformer on PTB)](LM_training.png)
 
