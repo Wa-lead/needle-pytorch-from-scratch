@@ -66,14 +66,3 @@ generate_ptb(model, corpus, "we have", max_len=30, temperature=0.8, device=devic
 
 <!-- TODO: inference example output -->
 
-## Build
-
-```bash
-mkdir -p build && cd build
-cmake ..
-make -j$(nproc)
-```
-
-## License
-
-MIT
